@@ -1,0 +1,13 @@
+
+
+CREATE COMPUTE MODULE obtenerDeudaPrevisionalUsingGET_LogFin
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		SET OutputRoot = InputRoot;
+		
+		DECLARE strMessage CHARACTER LogComponents_LB.GetRoot2Base64(InputRoot.JSON);
+		CALL LogComponents_LB.LogResponseInfo('operacion',strMessage,Environment);
+		
+		RETURN TRUE;
+	END;
+END MODULE;

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" targetNamespace="http://afip.gob.ar/ws/sud_restricciones" xmlns:sch="http://afip.gob.ar/ws/sud_restricciones" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:tns="http://afip.gob.ar/ws/sud_restricciones">
+  <wsdl:documentation>
+    <wsdl:appinfo source="WMQI_APPINFO">
+      <MRWSDLAppInfo imported="true">
+        <generatedMXSD location="sud_restricciones__2__InlineSchema1.mxsd"/>
+        <binding hasEncoding="false" imported="true" name="SudPortSoap11" originalBindingStyle="document"/>
+      </MRWSDLAppInfo>
+    </wsdl:appinfo>
+  </wsdl:documentation>
+  <wsdl:types>
+    
+          <xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://afip.gob.ar/ws/sud_restricciones">
+
+<xsd:include schemaLocation="sud_restricciones__2__InlineSchema1.mxsd"/>
+    </xsd:schema>
+    </wsdl:types>
+  <wsdl:message name="dummyResponse">
+    <wsdl:part element="sch:dummyResponse" name="dummyResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="tieneDeudaResponse">
+    <wsdl:part element="sch:tieneDeudaResponse" name="tieneDeudaResponse">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="dummyRequest">
+    <wsdl:part element="sch:dummyRequest" name="dummyRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:message name="tieneDeudaRequest">
+    <wsdl:part element="sch:tieneDeudaRequest" name="tieneDeudaRequest">
+    </wsdl:part>
+  </wsdl:message>
+  <wsdl:portType name="SudPort">
+    <wsdl:operation name="dummy">
+      <wsdl:input message="sch:dummyRequest" name="dummyRequest">
+    </wsdl:input>
+      <wsdl:output message="sch:dummyResponse" name="dummyResponse">
+    </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="tieneDeuda">
+      <wsdl:input message="sch:tieneDeudaRequest" name="tieneDeudaRequest">
+    </wsdl:input>
+      <wsdl:output message="sch:tieneDeudaResponse" name="tieneDeudaResponse">
+    </wsdl:output>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="SudPortSoap11" type="sch:SudPort">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="dummy">
+      <soap:operation soapAction=""/>
+      <wsdl:input name="dummyRequest">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="dummyResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="tieneDeuda">
+      <soap:operation soapAction=""/>
+      <wsdl:input name="tieneDeudaRequest">
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output name="tieneDeudaResponse">
+        <soap:body use="literal"/>
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="SudPortService">
+    <wsdl:port binding="sch:SudPortSoap11" name="SudPortSoap11">
+      <soap:address location="https://sud-ws.cloudhomo.afip.gob.ar/sud_restricciones"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

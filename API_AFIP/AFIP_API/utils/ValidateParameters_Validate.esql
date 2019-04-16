@@ -1,0 +1,50 @@
+BROKER SCHEMA utils
+
+DECLARE ParameterList EXTERNAL CHARACTER '';
+
+
+CREATE COMPUTE MODULE ValidateParameters_Validate
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		--X-Usuario,X-Id-Sesion,X-Canal,CUIT
+		DECLARE parameterListAux,parameterAux CHARACTER;
+		SET parameterListAux = ParameterList;
+		DECLARE flagWhile BOOLEAN TRUE;
+		DECLARE flagContains BOOLEAN FALSE;
+		
+		--Recorro hasta terminar la lista
+		WHILE flagWhile DO
+			--Si no tiene coma es el ultimo valor de la lista
+			IF CONTAINS(parameterListAux,',') THEN
+				--Obtengo el parametro a revisar en los ingresados
+				SET parameterAux = SUBSTRING(parameterListAux BEFORE ',');
+				--Borro el dato leido de la lista
+				SET parameterListAux = SUBSTRING(parameterListAux AFTER ',');
+			ELSE
+				--Obtengo el parametro a revisar en los ingresados
+				SET parameterAux = parameterListAux;
+				--Borro el dato leido de la lista
+				SET parameterListAux = '';
+				--Seteo el flag en false para terminar el while
+				SET flagWhile = FALSE;
+			END IF;
+			--Reviso si esta el valor en la lista de parametros ingresada
+			DECLARE refInParameters REFERENCE TO InputLocalEnvironment.REST.Input.Parameters.*[1];
+			WHILE LASTMOVE(refInParameters) DO
+				IF FIELDNAME(refInParameters) = parameterAux THEN
+					SET flagContains = TRUE;
+				END IF;
+				MOVE refInParameters NEXTSIBLING;
+			END WHILE;
+			--Si despues de recorrer los parametros el flag este en FALSE, arrojo excepcion porque falta un parametro
+			IF flagContains = FALSE THEN
+				THROW USER EXCEPTION MESSAGE 2951 VALUES('Parametros incorrectos');
+			ELSE
+				SET flagContains = FALSE;
+			END IF;
+		END WHILE;
+		
+		
+		RETURN FALSE;
+	END;
+END MODULE;

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?><schema xmlns="http://www.w3.org/2001/XMLSchema" targetNamespace="http://afip.gob.ar/ws/sud_restricciones" xmlns:sch="http://afip.gob.ar/ws/sud_restricciones">
+  <import namespace="http://schemas.xmlsoap.org/soap/envelope/" schemaLocation="../../../../../org/xmlsoap/schemas/soap/envelope/soapenv11.mxsd"/>
+  <include schemaLocation="sud_restricciones__2__InlineSchema1.mxsd"/>
+
+<!-- BEGIN Global group petaining to all wsdl:message definitions -->
+<!-- END Global group -->
+
+
+<!-- BEGIN Message Definitions for the wsdl:operations  -->
+<!-- END Message Definitions -->
+
+
+</schema>

@@ -1,0 +1,31 @@
+BROKER SCHEMA utils
+
+
+CREATE COMPUTE MODULE Login_armaSalida
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		SET OutputRoot.Properties = Environment.Variables.Properties;
+		-- Si llamo al ws guardo los nuevos datos de token y sign, sino propago los que están en la variable shared
+		DECLARE servicio CHAR;
+		IF (Environment.tokenValido = 'FALSE') THEN
+			SET servicio = Environment.Variables.servicio;
+			
+			-- Guarda los datos devueltos por el login de afip en variables compartidas
+			DECLARE respLogin CHAR FIELDVALUE(InputRoot.XMLNSC.*:loginCmsResponse.*:loginCmsReturn);    
+	        DECLARE respLoginBlob BLOB CAST (respLogin AS BLOB CCSID InputProperties.CodedCharSetId);
+	        CREATE LASTCHILD OF OutputRoot DOMAIN ('XMLNSC') PARSE (respLoginBlob, InputProperties.Encoding, InputProperties.CodedCharSetId);
+	        SET TOKEN.{servicio} = OutputRoot.XMLNSC.loginTicketResponse.credentials.token;
+        	SET SIGN.{servicio} =  OutputRoot.XMLNSC.loginTicketResponse.credentials.sign;
+        	SET TokenVigencia.{servicio} = OutputRoot.XMLNSC.loginTicketResponse.header.expirationTime;
+        	SET CUIT.{servicio} = Environment.Variables.CUIT;
+		ELSE
+			SET servicio = InputRoot.JSON.Data.Login.servicio;
+		END IF;
+		SET OutputRoot.XMLNSC = NULL;
+		SET OutputRoot.JSON.Data.RespLogin.Token = TOKEN.{servicio};
+		SET OutputRoot.JSON.Data.RespLogin.Sign = SIGN.{servicio};
+		SET OutputRoot.JSON.Data.RespLogin.Cuit = CUIT.{servicio};
+		
+		RETURN TRUE;
+	END;
+END MODULE;

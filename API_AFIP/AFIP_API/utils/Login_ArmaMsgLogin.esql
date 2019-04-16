@@ -1,0 +1,57 @@
+BROKER SCHEMA utils
+
+
+CREATE COMPUTE MODULE Login_ArmaMsgLogin
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		DECLARE refInLogin REFERENCE TO InputRoot.JSON.Data.Login;
+		--Guardo servicio en el Env
+		SET Environment.Variables.servicio = refInLogin.servicio;
+		--Guardo CUIT en el Env
+		SET Environment.Variables.CUIT = refInLogin.cuitRepresentada;
+		--Desencriptar clave de JKS
+		DECLARE strPass CHARACTER common.utility.DesencriptarAES(refInLogin.password.clave,refInLogin.password.valor);
+		--Firmado del mensaje
+		DECLARE msgAFirmar,msgFirmado CHAR;
+		DECLARE uniqueID INTEGER '1128763245'; -- Numero cualquiera de 10 digitos que empiece con 1, 2 o 3;
+		-- A la hora actual le resto 2 minutos para evitar problemas por diferencias entre el reloj del server y el de afip
+		DECLARE horaActual TIMESTAMP CURRENT_TIMESTAMP - CAST(2 AS INTERVAL MINUTE);
+		DECLARE horaExpiracion TIMESTAMP horaActual + CAST(12 AS INTERVAL HOUR);
+		DECLARE timeZone CHAR '-03:00';
+		DECLARE generationTime CHAR CAST (horaActual 	 AS CHARACTER FORMAT 'yyyy-MM-dd HH:mm:ss');
+		DECLARE expirationTime CHAR CAST (horaExpiracion AS CHARACTER FORMAT 'yyyy-MM-dd HH:mm:ss');
+		SET generationTime = SUBSTRING(generationTime FROM 1 FOR 10) || 'T' || substring (generationTime FROM 12 FOR 9) || '-03:00';
+		SET expirationTime = SUBSTRING(expirationTime FROM 1 FOR 10) || 'T' || substring (expirationTime FROM 12 FOR 9) || '-03:00';
+		--SET Environment.Cuit = '33500005179';
+		SET msgAFirmar =
+		'<loginTicketRequest>
+		<header>
+		<source>' || refInLogin.source ||'</source>  
+		<destination>'|| refInLogin.destinationCN ||'</destination>
+		<uniqueId>' || CAST (uniqueID AS CHAR) ||  '</uniqueId>
+		<generationTime>' || generationTime || '</generationTime>
+		<expirationTime>' || expirationTime || '</expirationTime>
+		</header>
+		<service>' || refInLogin.servicio || '</service>
+		</loginTicketRequest>';
+		CALL firmarMensaje(msgAFirmar, refInLogin.pathKeystore, refInLogin.alias, strPass ) INTO msgFirmado;
+		
+		-- Seteo dinamico de URL de login
+		SET OutputLocalEnvironment.Destination.SOAP.Request.Transport.HTTP.WebServiceURL = refInLogin.URL_Login;
+		-- Arma el mensaje de login para AFIP
+		SET OutputRoot.Properties = InputRoot.Properties;
+		
+		DECLARE soapenv NAMESPACE 'http://schemas.xmlsoap.org/soap/envelope/';
+		DECLARE wsaa NAMESPACE 'http://wsaa.view.sua.dvadac.desein.afip.gov';
+		SET OutputRoot.XMLNSC.soapenv:Envelope.(XML.NamespaceDecl)xmlns:soapenv = soapenv;
+		SET OutputRoot.XMLNSC.soapenv:Envelope.(XML.NamespaceDecl)xmlns:wsaa = wsaa;
+		SET OutputRoot.XMLNSC.soapenv:Envelope.soapenv:Header = '';
+		SET OutputRoot.XMLNSC.soapenv:Envelope.soapenv:Body.wsaa:loginCms.wsaa:in0 = msgFirmado;
+			
+		RETURN TRUE;		
+	END;
+	
+	CREATE PROCEDURE firmarMensaje(IN msgAFirmar CHARACTER, IN pathKeystore CHARACTER, IN alias CHARACTER, IN password CHARACTER) RETURNS CHAR
+	LANGUAGE JAVA
+	EXTERNAL NAME "common.utility.Utils.firmarMensaje"; 
+END MODULE;

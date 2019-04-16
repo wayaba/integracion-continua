@@ -1,0 +1,210 @@
+mqsihome = '/opt/ibm/iib-10.0.0.12'
+workspacesdir = "${JENKINS_HOME}/workspace/"
+				
+pipeline {
+
+	agent any
+
+	environment {
+		DISPLAY = ":1"
+	}
+	
+	tools { 
+        gradle 'gradle-jenkins' 
+    }
+	
+	parameters {
+		string(name: 'appname', defaultValue: 'AFIP_API', description: '')
+    }
+
+	
+
+	stages {
+	    
+	   stage('bajo codigo shared') {
+			steps {
+                sh "mkdir -p common"
+                echo "bajo common--------------------------"
+                dir('common') {
+                     git branch: 'master',
+                    credentialsId: 'GIT-LAB-HTTPS',
+                    url: 'https://10.241.164.127/integracion/pruebas/CommonLibraries.git'
+                }
+                sh "cp -rf common/* ."
+                sh "rm -R common"
+			}
+		}
+		stage('SonarQube analysis') {
+			steps {
+				script {
+					def scannerHome = tool 'sonar-server'
+					withSonarQubeEnv('sonarqubesoa') {
+						sh "${scannerHome}/bin/sonar-scanner \
+										-Dsonar.projectKey=afipApi \
+										-Dsonar.projectname=afipApi \
+										-Dsonar.projectVersion=1 \
+										-Dsonar.sources=. \
+										-Dsonar.language=esql"
+					}
+				}
+			}
+		}
+		stage('Compilacion') {
+			steps {
+			    
+			    echo "Set DISPLAY"
+						sh '''
+							sudo Xvfb :1 -screen 0 1024x768x24 </dev/null &
+							export DISPLAY=":1"
+						'''
+					
+			
+			     echo "mqsicreatebar -data ${workspacesdir}/${JOB_NAME} -b ${workspacesdir}/${JOB_NAME}/abc.bar -a ${params.appname} -trace"
+			     sh "${mqsihome}/tools/mqsicreatebar -data ${workspacesdir}/${JOB_NAME} -b ${workspacesdir}/${JOB_NAME}/abc.bar -a ${params.appname} -trace"
+			    
+			}
+		}
+		
+		stage('Build Image')
+		{
+			steps{
+				echo "Hago el build"
+				sh "docker build -t image-temp -f ./${params.appname}/jenkins/Dockerfile  ."
+			}
+		}
+        		
+		stage('Run Image')
+		{
+			steps{
+				//antes del run verifico si no existe el container 
+				script{
+						CONTAINER_ID = sh (
+							script: 'docker ps -aqf "name=app-running"',
+							returnStdout: true
+						).trim()
+						
+						if ( CONTAINER_ID ) {
+							sh 'docker stop app-running'
+							echo 'Stoppeo la instancia'
+							sh 'docker rm app-running'
+						}
+					}	
+					
+				sh "docker run -e LICENSE=accept -d -e NODENAME=MYNODE -e SERVERNAME=MYSERVER -p 7601:7600 -p 7801:7800 -P --name app-running image-temp"
+			}
+		}
+		stage('Set Environment')
+		{
+		    steps{
+		    
+		        //COPIO LOS ARTEFACTOS AL CONTAINER
+				sh "docker cp './${params.appname}/jenkins/artifacts/.' 'app-running:/tmp/artifacts/'"
+
+		        //COPIO SCRIPTs AL CONTAINER
+				sh "docker cp './${params.appname}/jenkins/postconfig.sh' 'app-running:/tmp/scripts/'"
+
+		        //ENTRO AL CONTAINER RUNNING Y ARREGLO PERMISOS
+				sh "docker exec -u 0 -i app-running /bin/bash -c ' chmod 777 /tmp/scripts/* \
+                && chmod 777 /tmp/artifacts/* '"
+			    
+			    //ENTRO AL CONTAINER RUNNING Y EJECUTO EL POSTCONFIG
+				sh "docker exec -i app-running /bin/sh -c '  /tmp/scripts/postconfig.sh '"
+
+		    }
+		}
+		stage('Test')
+		{
+			
+			steps{
+			     dir('./AFIP_API/jenkins') {
+			        echo 'Ejecuto la validacion de SPOCK'
+                    sh 'gradle clean test'
+                    }
+				}
+		}
+		stage('Clean to generic image')
+		{
+			steps{
+				//antes del run verifico si no existe el container 
+				script{
+						CONTAINER_ID = sh (
+							script: 'docker ps -aqf "name=app-running"',
+							returnStdout: true
+						).trim()
+						
+						if ( CONTAINER_ID ) {
+							sh 'docker stop app-running'
+							echo 'Stoppeo la instancia'
+							sh 'docker rm app-running'
+						}
+					}	
+					
+				sh "docker run -e LICENSE=accept -d -p 7601:7600 -p 7801:7800 -P --name app-running image-temp"
+			}
+		}
+		stage('Tag image')
+		{
+			steps{
+			
+				script{
+					
+					CONTAINER_ID = sh (
+						script: 'docker ps -aqf "name=app-running"',
+						returnStdout: true
+					).trim()
+					
+				    def oldtag = sh (script: "git tag",returnStdout: true).trim()
+					def tagnumber = input(
+							id: 'tagnumber', 
+							message: 'Que numero de tag?', 
+							parameters: [[$class: 'StringParameterDefinition', 
+										defaultValue: '0.0', 
+										description: oldtag, 
+										name: 'version']
+							]
+					)
+					
+					def repo = sh (script: "git config --get remote.origin.url",returnStdout: true).trim()
+					echo "La nueva version es: ${tagnumber}"
+					echo "El repo es: ${repo}"
+					
+					repo = repo.replaceAll("https://", "")
+					repo = repo.replaceAll("git@", "")
+					repo = repo.replaceAll(":", "/")
+					
+					echo "El repo es: ${repo}"
+					
+					withCredentials([usernamePassword(credentialsId: 'GIT-LAB-HTTPS', passwordVariable: 'GIT_PASSWORD', usernameVariable: 'GIT_USERNAME')]) {
+					    sh("git config user.name 'pablo'")
+						sh("git config user.email 'ppedraza.sofrecom@supervielle.com.ar'")
+
+						sh("git tag -a ${tagnumber} -m 'Tag de Jenkins'")
+						sh("git -c http.sslVerify=false push https://${GIT_USERNAME}:${GIT_PASSWORD}@${repo} --tags")
+					}
+					
+					def imagename = "${params.appname}"
+				    imagename = imagename.toLowerCase()
+					
+					sh "docker commit ${CONTAINER_ID} ${imagename}:${tagnumber}"
+					
+					//Push to AZURE Registry
+					withCredentials([usernamePassword(credentialsId: 'AZURE-CREDENTIAL', passwordVariable: 'AZURE_PASSWORD', usernameVariable: 'AZURE_USERNAME')]) {
+						sh "docker login spvaksdesatest.azurecr.io -u ${AZURE_USERNAME} -p ${AZURE_PASSWORD}"
+						sh "docker tag ${imagename}:${tagnumber} spvaksdesatest.azurecr.io/soa/${imagename}:${tagnumber}"
+                        sh "docker push spvaksdesatest.azurecr.io/soa/${imagename}:${tagnumber}"
+					}
+					
+					echo 'Stoppeo la instancia'
+					sh 'docker stop app-running'
+					echo 'Stoppeo la instancia'
+					sh 'docker rm app-running'
+	
+					//Borro la imagen
+					sh (script: 'docker rmi image-temp')
+					
+				}	
+			}
+		}
+	}
+	
+}

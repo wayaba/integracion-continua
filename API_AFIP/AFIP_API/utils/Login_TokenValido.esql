@@ -1,0 +1,36 @@
+BROKER SCHEMA utils
+-- VARIABLES COMPARTIDAS
+DECLARE TOKEN SHARED ROW; 
+DECLARE SIGN SHARED ROW;
+DECLARE TokenVigencia SHARED ROW;
+DECLARE CUIT SHARED ROW;
+
+CREATE FILTER MODULE Login_TokenValido
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		SET Environment.Variables.Properties = Root.Properties;
+		DECLARE servicio CHAR Root.JSON.Data.Login.servicio;
+		DECLARE FECHA_AHORA TIMESTAMP CURRENT_TIMESTAMP;		
+		IF 	(TokenVigencia.{servicio} is NOT NULL) AND (TokenVigencia.{servicio} >= castGMT(FECHA_AHORA)) THEN
+			RETURN TRUE;
+		ELSE
+			/*si está vencida, propago el mensaje tal cual entró por la terminal Out1 */
+			-- Pongo un flag para saber en armaSalida si paso por el ws o no
+			SET Environment.tokenValido = 'FALSE';
+			RETURN FALSE;
+		END IF;
+		
+	END;
+	CREATE FUNCTION castGMT (IN tiempo TIMESTAMP ) RETURNS CHAR
+	BEGIN
+		DECLARE tmp CHARACTER tiempo; 
+		SET tmp = SUBSTRING (tmp FROM 12 FOR 23);
+		DECLARE fecha CHAR;
+		set fecha =  SUBSTRING (tmp FROM 1 FOR 10);
+		DECLARE hora CHAR;
+		set hora = SUBSTRING (tmp FROM 12 FOR 13);
+		declare tmp1 char;
+		SET tmp1 = fecha || 'T'|| hora ||'-3:00';
+		RETURN tmp1;
+	END;
+END MODULE;

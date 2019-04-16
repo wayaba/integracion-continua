@@ -1,0 +1,77 @@
+//CLAVEEE INSTALAR ESTE PLUGIN
+//Pipeline Utility Steps
+
+properties = null
+mqsihome = '/opt/ibm/iib-10.0.0.12'
+workspacesdir = "${JENKINS_HOME}/workspace/"
+
+def loadProperties(String env='DESA') {
+    node {
+        checkout scm
+		def envFile = "./${env}/env.properties"
+		properties = readProperties file: envFile
+    }
+}
+				
+pipeline {
+
+	agent any
+
+	parameters {
+		string(name: 'appname', defaultValue: 'AFIP_API', description: 'Nombre del proyecto dentro del repo Config')
+		string(name: 'imgname', defaultValue: 'afip_api:0.61', description: 'Nombre de la imagen')
+		choice(name: 'environment', choices: "DESA\nTEST\nPROD", description: 'Selecciona el ambiente' )
+    }
+
+	
+
+	stages {
+		
+		stage('Run Image')
+		{
+			steps{
+			
+			    //antes del run verifico si no existe el container
+				script{
+				
+				        echo "Cargo propiedades ambiente: ${params.environment}"
+				        loadProperties(params.environment)
+
+				
+						CONTAINER_ID = sh (
+							script: 'docker ps -aqf "name=blitox-running2"',
+							returnStdout: true
+						).trim()
+						
+						if ( CONTAINER_ID ) {
+							sh 'docker stop blitox-running2'
+							echo 'Stoppeo la instancia'
+							sh 'docker rm blitox-running2'
+						}
+					}	
+
+                //STARTEO EL SERVICIO
+				sh "docker run -e LICENSE=accept -d -e NODENAME=MYNODE -e SERVERNAME=MYSERVER  -p ${properties.'API.manageport'}:7600 -p ${properties.'API.port'}:7800 -P --name blitox-running2 ${params.imgname}"
+				
+				//COPIO LOS ARTEFACTOS AL CONTAINER
+				sh "docker cp '${workspacesdir}/${JOB_NAME}/${params.environment}/artifacts/.' 'blitox-running2:/tmp/artifacts/'"
+				
+				//COPIO SCRIPTs AL CONTAINER
+				sh "docker cp '${workspacesdir}/${JOB_NAME}/postconfig.sh' 'blitox-running2:/tmp/scripts/'"
+				sh "docker cp '${workspacesdir}/${JOB_NAME}/getproperty.sh' 'blitox-running2:/tmp/scripts/'"
+				
+				//COPIO EL ENV.PROPERTIES AL CONTAINER
+				sh "docker cp '${workspacesdir}/${JOB_NAME}/${params.environment}/env.properties' 'blitox-running2:/tmp/scripts/'"
+				
+				//ENTRO AL CONTAINER RUNNING Y ARREGLO PERMISOS
+				sh "docker exec -u 0 -i blitox-running2 /bin/bash -c ' chmod 777 /tmp/scripts/* \
+                && chmod 777 /tmp/artifacts/* '"
+			    
+			    //ENTRO AL CONTAINER RUNNING Y EJECUTO EL POSTCONFIG
+				sh "docker exec -i blitox-running2 /bin/sh -c '  /tmp/scripts/postconfig.sh '"
+				
+			}
+		}
+	}
+	
+}

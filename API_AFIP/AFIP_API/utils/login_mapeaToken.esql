@@ -1,0 +1,21 @@
+BROKER SCHEMA utils
+
+
+CREATE COMPUTE MODULE login_mapeaToken
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		--Desencripto la clave de la JKS
+		DECLARE clave CHARACTER Environment.parametros.password.clave;
+		DECLARE pass CHARACTER Environment.parametros.password.valor;
+		SET pass = common.utility.DesencriptarAES(clave,pass);	
+		SET OutputRoot.XMLNSC.ReqLogin.password 		= pass;
+		SET OutputRoot.XMLNSC.ReqLogin.URL_Login 		= Environment.parametros.url_Login;
+		SET OutputRoot.XMLNSC.ReqLogin.source 			= Environment.parametros.source;
+		SET OutputRoot.XMLNSC.ReqLogin.servicio 		= Environment.parametros.servicio;
+		SET OutputRoot.XMLNSC.ReqLogin.destinationCN 	= Environment.parametros.destinationCN;
+		SET OutputRoot.XMLNSC.ReqLogin.pathKeystore 	= Environment.parametros.pathKeystore;
+		SET OutputRoot.XMLNSC.ReqLogin.alias 			= Environment.parametros.alias;
+		
+		RETURN TRUE;
+	END;
+END MODULE;

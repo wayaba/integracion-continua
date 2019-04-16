@@ -1,0 +1,25 @@
+
+
+Importing file: \ws\services\LoginCms.wsdl
+
+BIP0224W The message set has no XML Wire Format layer defined. Only the logical information will appear in the model.
+The WSDL import will proceed with bindings LoginCmsSoapBinding.
+Creating wsdl schema document for RemoteFiles/ar/gov/afip/wsaahomo/ws/services/logincms/LoginCms.mxsd.
+Parsing wsdl binding {https://wsaahomo.afip.gov.ar/ws/services/LoginCms}LoginCmsSoapBinding.
+Parsing wsdl binding input loginCms.
+Parsing wsdl binding output loginCms.
+Parsing wsdl binding fault LoginFault.
+Processing doc style for operation loginCms.
+Populating WSDL schema AFIP.Login_MS/ar/gov/afip/wsaahomo/ws/services/logincms/LoginCms.mxsd.
+Creating file AFIP.Login_MS/ar/gov/afip/wsaahomo/ws/services/logincms/LoginCms.mxsd in the workspace.
+Creating file AFIP.Login_MS/gov/afip/desein/dvadac/sua/view/wsaa/LoginCms_InlineSchema1.mxsd in the workspace.
+Creating file AFIP.Login_MS/ar/gov/afip/wsaahomo/ws/services/logincms/LoginCms_InlineSchema2.mxsd in the workspace.
+Copying source WSDL LoginCms?wsdl to LoginCms.wsdl.
+
+Elapsed time processing this message definition file: 0.348 seconds
+Number of warnings for this message definition file: 1
+
+
+Number of files processed: 1
+
+

@@ -1,0 +1,26 @@
+
+
+Importing file: C:\Users\jd84692\Downloads\sud_restricciones (2).wsdl
+
+BIP0224W The message set has no XML Wire Format layer defined. Only the logical information will appear in the model.
+The WSDL import will proceed with bindings SudPortSoap11.
+Creating wsdl schema document for file:///C:/Users/jd84692/Downloads/sud_restricciones (2).wsdl.
+Parsing wsdl binding {http://afip.gob.ar/ws/sud_restricciones}SudPortSoap11.
+Parsing wsdl binding input dummy.
+Parsing wsdl binding output dummy.
+Parsing wsdl binding input tieneDeuda.
+Parsing wsdl binding output tieneDeuda.
+Processing doc style for operation dummy.
+Processing doc style for operation tieneDeuda.
+Populating WSDL schema AFIP.ObtenerDeudaPrevisional_MS/ar/gob/afip/ws/sudrestricciones/sud_restricciones (2).mxsd.
+Creating file AFIP.ObtenerDeudaPrevisional_MS/ar/gob/afip/ws/sudrestricciones/sud_restricciones (2).mxsd in the workspace.
+Creating file AFIP.ObtenerDeudaPrevisional_MS/ar/gob/afip/ws/sudrestricciones/sud_restricciones__2__InlineSchema1.mxsd in the workspace.
+Copying source WSDL sud_restricciones (2).wsdl to sud_restricciones (2).wsdl.
+
+Elapsed time processing this message definition file: 1.592 seconds
+Number of warnings for this message definition file: 1
+
+
+Number of files processed: 1
+
+

@@ -1,0 +1,35 @@
+
+
+CREATE COMPUTE MODULE obtenerDeudaPrevisionalUsingGET_CreateResponse
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		DECLARE refEnv REFERENCE TO Environment.Variables;
+		SET OutputRoot.Properties = refEnv.Properties;
+		
+		--Logeo response afip
+		CALL LogComponents_LB.LogResponseInfo('Backend_AFIP',InputRoot.SOAP,Environment);
+		CALL LogComponents_LB.LogRequestTimemark('Backend_AFIP','WebServices','WS sud_restricciones',Environment);
+		
+		--Seteo txid en header
+		SET OutputRoot.HTTPReplyHeader."X-TxId" = Environment.ParametrosLog.txId;
+		--Validacion respuesta OK proveedor
+		DECLARE status CHAR CAST (InputRoot.HTTPResponseHeader."X-Original-HTTP-Status-Code" AS CHARACTER);
+		IF (status LIKE '2%') THEN
+			SET OutputRoot.JSON.Data.tiene_deuda = InputRoot.SOAP.Body.nsDeuda:tieneDeudaResponse.nsDeuda:tieneDeuda;
+			SET OutputRoot.JSON.Data.id_referencia = InputRoot.SOAP.Body.nsDeuda:tieneDeudaResponse.nsDeuda:consultaId;
+		ELSE
+			SET OutputRoot.HTTPReplyHeader."X-Original-HTTP-Status-Code" = 500;
+			CREATE FIELD OutputRoot.JSON.Data.error;
+			DECLARE refOutError REFERENCE TO OutputRoot.JSON.Data.error;
+			SET refOutError.status = 500;
+			SET refOutError.code = 'AF03';
+			SET refOutError.title = 'Error backend AFIP';
+			SET refOutError.detail = InputRoot.SOAP.Body.nsEnv:Fault.faultstring;
+		END IF;
+		
+		--Log salida
+		CALL LogComponents_LB.LogResponseInfo('operacion',OutputRoot.JSON,Environment);
+		
+		RETURN TRUE;
+	END;
+END MODULE;

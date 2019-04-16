@@ -1,0 +1,57 @@
+
+CREATE COMPUTE MODULE obtenerDeudaPrevisionalUsingGET_GetParams
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL CopyMessageHeaders();
+		--Carga de todos los parametros
+		CALL LogComponents_LB.LoadParametersInEnvironment('C:/Log4j2/log4j2.xml','AFIP_API','AFIP','obtenerDeudaPrevisionalUsingGET',
+		InputLocalEnvironment.REST.Input.Parameters."X-Id-Sesion",InputLocalEnvironment.REST.Input.Parameters."X-Canal",
+		'host-test',InputRoot.HTTPInputHeader."X-Remote-Host",Environment);
+		
+		CREATE LASTCHILD OF OutputRoot DOMAIN 'XMLNSC';
+		SET OutputRoot.XMLNSC.Parametros.IdSesion = InputLocalEnvironment.REST.Input.Parameters."X-Id-Sesion";
+		SET OutputRoot.XMLNSC.Parametros.Canal = InputLocalEnvironment.REST.Input.Parameters."X-Canal";
+		SET OutputRoot.XMLNSC.Parametros.Usuario = InputLocalEnvironment.REST.Input.Parameters."X-Usuario";
+		SET OutputRoot.XMLNSC.Parametros.CUIT = InputLocalEnvironment.REST.Input.Parameters.CUIT;
+		CALL LogComponents_LB.LogRequestInfo('operacion',OutputRoot.XMLNSC,Environment);
+		DELETE FIELD OutputRoot.XMLNSC;
+		
+		CREATE LASTCHILD OF Environment.Variables NAME 'Properties';
+		SET Environment.Variables.Properties = InputRoot.Properties;
+		SET Environment.Variables.HTTPInputHeader = InputRoot.HTTPInputHeader;
+		SET Environment.Variables.LocalEnvironment = InputLocalEnvironment;
+		CREATE FIELD OutputRoot.JSON.Data.Login;
+		DECLARE refOutParams REFERENCE TO OutputRoot.JSON.Data.Login;
+		
+		SET refOutParams.alias = 'afipsign';
+		SET refOutParams.cuitRepresentada = '20264396132';
+		SET refOutParams.destinationCN = 'cn=wsaahomo,o=afip,c=ar,SERIALNUMBER=CUIT 33693450239';
+		SET refOutParams.password.clave = 'vkjyMkCz3nbhoXxWOuMqPw==';
+		SET refOutParams.password.valor = 'gg2MFzJLSPSPNuWmBvQ6Jg==';
+		SET refOutParams.pathKeystore = '/tmp/artifacts/clientcert.jks';
+		SET refOutParams.servicio = 'sud_restricciones';
+		SET refOutParams.source = 'SERIALNUMBER=CUIT 20264396132,CN=PlataformaSOA';
+		SET refOutParams.url = 'https://sud-ws.cloudhomo.afip.gob.ar/sud_restricciones';
+		SET refOutParams.url_Login = 'https://wsaahomo.afip.gov.ar/ws/services/LoginCms';
+		
+		--Logeo request login
+		CALL LogComponents_LB.LogRequestInfo('Login_AFIP',OutputRoot.JSON,Environment);
+		CALL LogComponents_LB.LogRequestTimemark('Login_AFIP','CallableFlow','Login de AFIP',Environment);
+		
+		RETURN TRUE;
+	END;
+
+	CREATE PROCEDURE CopyMessageHeaders() BEGIN
+		DECLARE I INTEGER 1;
+		DECLARE J INTEGER;
+		SET J = CARDINALITY(InputRoot.*[]);
+		WHILE I < J DO
+			SET OutputRoot.*[I] = InputRoot.*[I];
+			SET I = I + 1;
+		END WHILE;
+	END;
+
+	CREATE PROCEDURE CopyEntireMessage() BEGIN
+		SET OutputRoot = InputRoot;
+	END;
+END MODULE;

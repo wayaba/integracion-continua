@@ -1,0 +1,32 @@
+DECLARE nsDeuda NAMESPACE 'http://afip.gob.ar/ws/sud_restricciones';
+DECLARE nsEnv NAMESPACE 'http://schemas.xmlsoap.org/soap/envelope/';
+
+
+CREATE COMPUTE MODULE obtenerDeudaPrevisionalUsingGET_CreateRequest
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		--Logeo response login
+		CALL LogComponents_LB.LogResponseInfo('Login_AFIP',InputRoot.JSON.Data,Environment);
+		
+		CALL LogComponents_LB.LogResponseTimemark('Login_AFIP','CallableFlow','Login de AFIP',Environment);
+		
+		CREATE FIELD OutputRoot.XMLNSC.nsEnv:Envelope.nsEnv:Header;
+		CREATE FIELD OutputRoot.XMLNSC.nsEnv:Envelope.nsEnv:Body.nsDeuda:tieneDeudaRequest;
+		DECLARE outBody REFERENCE TO OutputRoot.XMLNSC.nsEnv:Envelope.nsEnv:Body.nsDeuda:tieneDeudaRequest;
+		
+		SET outBody.nsDeuda:cuit 				= Environment.Variables.LocalEnvironment.REST.Input.Parameters.CUIT;
+		SET outBody.nsDeuda:cuitRepresentado 	= InputRoot.JSON.Data.RespLogin.Cuit;
+		SET outBody.nsDeuda:token 				= InputRoot.JSON.Data.RespLogin.Token;
+		SET outBody.nsDeuda:sign 				= InputRoot.JSON.Data.RespLogin.Sign;
+		
+		--Seteo URL SOAP
+		SET OutputLocalEnvironment.Destination.SOAP.Request.Transport.HTTP.WebServiceURL = 'https://sud-ws.cloudhomo.afip.gob.ar/sud_restricciones';
+		
+		--Logeo request afip
+		CALL LogComponents_LB.LogRequestInfo('Backend_AFIP',OutputRoot.XMLNSC,Environment);
+		
+		CALL LogComponents_LB.LogRequestTimemark('Backend_AFIP','WebServices','WS sud_restricciones',Environment);
+		
+		RETURN TRUE;
+	END;
+END MODULE;

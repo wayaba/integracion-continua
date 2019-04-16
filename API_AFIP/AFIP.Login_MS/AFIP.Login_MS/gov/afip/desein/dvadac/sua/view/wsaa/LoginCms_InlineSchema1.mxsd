@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?><schema xmlns="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" targetNamespace="http://wsaa.view.sua.dvadac.desein.afip.gov" xmlns:apachesoap="http://xml.apache.org/xml-soap" xmlns:impl="https://wsaahomo.afip.gov.ar/ws/services/LoginCms" xmlns:intf="https://wsaahomo.afip.gov.ar/ws/services/LoginCms" xmlns:tns1="http://wsaa.view.sua.dvadac.desein.afip.gov" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:wsdlsoap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+   <import namespace="https://wsaahomo.afip.gov.ar/ws/services/LoginCms" schemaLocation="../../../../../../../ar/gov/afip/wsaahomo/ws/services/logincms/LoginCms_InlineSchema2.mxsd"/>
+   <element name="loginCms">
+        <xsd:annotation>
+      <xsd:appinfo source="WMQI_APPINFO">
+        <MRMessage messageDefinition="///@mrObject.6" schemaObject="/0/loginCms;XSDElementDeclaration"/>
+      </xsd:appinfo>
+    </xsd:annotation>
+        <complexType>
+     <sequence>
+      <element name="in0" type="string"/>
+     </sequence>
+    </complexType>
+   </element>
+   <element name="loginCmsResponse">
+        <xsd:annotation>
+      <xsd:appinfo source="WMQI_APPINFO">
+        <MRMessage messageDefinition="///@mrObject.7" schemaObject="/0/loginCmsResponse;XSDElementDeclaration=1"/>
+      </xsd:appinfo>
+    </xsd:annotation>
+        <complexType>
+     <sequence>
+      <element name="loginCmsReturn" type="string"/>
+     </sequence>
+    </complexType>
+   </element>
+  </schema>

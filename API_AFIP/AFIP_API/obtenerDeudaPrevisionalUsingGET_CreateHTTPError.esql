@@ -1,0 +1,30 @@
+
+
+CREATE COMPUTE MODULE obtenerDeudaPrevisionalUsingGET_CreateHTTPError
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		CALL LogComponents_LB.LogRequestTimemark('Backend_AFIP','WebServices','WS sud_restricciones',Environment);
+		
+		DECLARE codError INTEGER;
+		DECLARE strError CHARACTER;
+		CALL LogComponents_LB.GetLastExceptionDetail(InputExceptionList,codError,strError);
+		
+		--Seteo txid en header
+		SET OutputRoot.HTTPReplyHeader."X-TxId" = Environment.ParametrosLog.txId;
+		
+		SET OutputRoot.HTTPReplyHeader."X-Original-HTTP-Status-Code" = 500;
+		CREATE FIELD OutputRoot.JSON.Data.error;
+		DECLARE refOutError REFERENCE TO OutputRoot.JSON.Data.error;
+		SET refOutError.status = 500;
+		SET refOutError.code = 'AF04';
+		SET refOutError.title = 'Error al llamar al WS de AFIP';
+		SET refOutError.detail = COALESCE(InputRoot.SOAP.Body.nsEnv:Fault.faultstring,strError);
+		
+		CALL LogComponents_LB.LogError('Backend_AFIP',strError,Environment);
+		
+		--Log salida
+		CALL LogComponents_LB.LogResponseInfo('operacion',OutputRoot.JSON,Environment);
+		
+		RETURN TRUE;
+	END;
+END MODULE;

@@ -1,0 +1,31 @@
+BROKER SCHEMA utils
+
+
+CREATE COMPUTE MODULE error_handler_MapError
+	CREATE FUNCTION Main() RETURNS BOOLEAN
+	BEGIN
+		DECLARE codError INTEGER;
+		DECLARE strError CHARACTER;
+		CALL LogComponents_LB.GetLastExceptionDetail(InputExceptionList,codError,strError);
+		
+		IF codError = 2951 THEN
+			SET OutputRoot.HTTPReplyHeader."X-Original-HTTP-Status-Code" = 400;
+			CREATE FIELD OutputRoot.JSON.Data.error;
+			DECLARE refOutError REFERENCE TO OutputRoot.JSON.Data.error;
+			SET refOutError.status = 400;
+			SET refOutError.code = 'AF01';
+			SET refOutError.title = 'Bad Request';
+			SET refOutError.detail = strError;
+		ELSE
+			SET OutputRoot.HTTPReplyHeader."X-Original-HTTP-Status-Code" = 500;
+			CREATE FIELD OutputRoot.JSON.Data.error;
+			DECLARE refOutError REFERENCE TO OutputRoot.JSON.Data.error;
+			SET refOutError.status = 500;
+			SET refOutError.code = 'AF01';
+			SET refOutError.title = 'Error interno';
+			SET refOutError.detail = strError;
+		END IF;
+		
+		RETURN TRUE;
+	END;
+END MODULE;
